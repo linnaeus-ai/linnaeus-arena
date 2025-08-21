@@ -87,14 +87,15 @@ class Database:
             'translate': 's.translate DESC, s.overall DESC, s.text DESC, s.vision DESC, m.name ASC',
             'vision': 's.vision DESC, s.overall DESC, s.text DESC, s.translate DESC, m.name ASC',
         }
+        topic_key = topic if topic in order_map else 'overall'
         with closing(self._connect()) as conn:
             cur = conn.cursor()
-            rows = cur.execute(
-                f'''
-                SELECT m.name as model, m.org, s.text, s.translate, s.vision, s.overall, s.updated_at
-                FROM models m JOIN scores s ON m.id = s.model_id
-                ORDER BY {order_map[topic]}
-                ''').fetchall()
+            sql = (
+                'SELECT m.name as model, m.org, s.text, s.translate, s.vision, s.overall, s.updated_at '
+                'FROM models m JOIN scores s ON m.id = s.model_id '
+                f'ORDER BY {order_map[topic_key]}'
+            )
+            rows = cur.execute(sql).fetchall()
             result = []
             for idx, r in enumerate(rows, start=1):
                 result.append({

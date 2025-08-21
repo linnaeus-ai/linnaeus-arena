@@ -83,17 +83,19 @@ export class Database {
   }
 
   async getLeaderboard(topic) {
+    const allowedTopics = new Set(['overall', 'text', 'translate', 'vision']);
+    const key = allowedTopics.has(topic) ? topic : 'overall';
     const orderBy = {
       overall: 's.overall DESC, s.text DESC, s.translate DESC, s.vision DESC, m.name ASC',
       text: 's.text DESC, s.overall DESC, s.translate DESC, s.vision DESC, m.name ASC',
       translate: 's.translate DESC, s.overall DESC, s.text DESC, s.vision DESC, m.name ASC',
       vision: 's.vision DESC, s.overall DESC, s.text DESC, s.translate DESC, m.name ASC'
-    }[topic];
+    }[key];
 
     const rows = await this.conn.all(
       `SELECT m.name as model, m.org, s.text, s.translate, s.vision, s.overall, s.updated_at
        FROM models m JOIN scores s ON m.id = s.model_id
-       ORDER BY ${orderBy}`
+  ORDER BY ${orderBy}`
     );
 
     // Add rank after sorting

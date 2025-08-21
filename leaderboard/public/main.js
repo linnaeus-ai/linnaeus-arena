@@ -10,10 +10,37 @@ const tBody = () => document.querySelector('#leaderboard tbody');
 const headers = () => Array.from(document.querySelectorAll('#leaderboard thead th.sortable'));
 
 async function load(topic) {
-  const res = await fetch(`/api/leaderboard?topic=${encodeURIComponent(topic)}`);
-  const data = await res.json();
-  state.rows = data;
-  applyFilter();
+  const errorBoxId = 'error-box';
+  const showError = (msg) => {
+    let el = document.getElementById(errorBoxId);
+    if (!el) {
+      el = document.createElement('div');
+      el.id = errorBoxId;
+      el.style.color = '#b00020';
+      el.style.margin = '8px 0';
+      const container = document.querySelector('#leaderboard')?.parentElement || document.body;
+      container.prepend(el);
+    }
+    el.textContent = msg;
+  };
+  const clearError = () => {
+    const el = document.getElementById(errorBoxId);
+    if (el) el.textContent = '';
+  };
+
+  try {
+    const res = await fetch(`/api/leaderboard?topic=${encodeURIComponent(topic)}`);
+    if (!res.ok) {
+      showError(`Failed to load leaderboard (${res.status})`);
+      return;
+    }
+    const data = await res.json();
+    clearError();
+    state.rows = Array.isArray(data) ? data : [];
+    applyFilter();
+  } catch (err) {
+    showError('Network error while loading leaderboard. Please retry.');
+  }
 }
 
 function applyFilter() {
