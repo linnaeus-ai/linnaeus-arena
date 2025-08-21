@@ -1,7 +1,18 @@
 import os
+import random
 import sqlite3
-from datetime import datetime
+from datetime import datetime, UTC
 from contextlib import closing
+
+# Whitelisted ORDER BY clauses. Do not construct identifiers from user input.
+ORDER_BY_MAP = {
+    'overall': 's.overall DESC, s.text DESC, s.translate DESC, s.vision DESC, m.name ASC',
+    'text': 's.text DESC, s.overall DESC, s.translate DESC, s.vision DESC, m.name ASC',
+    'translate': 's.translate DESC, s.overall DESC, s.text DESC, s.vision DESC, m.name ASC',
+    'vision': 's.vision DESC, s.overall DESC, s.text DESC, s.translate DESC, m.name ASC',
+}
+
+ALLOWED_TOPICS = set(ORDER_BY_MAP.keys())
 
 class Database:
     def __init__(self, db_path: str):
@@ -42,7 +53,7 @@ class Database:
             self.seed()
 
     def seed(self):
-        now = datetime.utcnow().isoformat()
+        now = datetime.now(UTC).isoformat()
         models = [
             { 'name': 'GPT-4.1', 'org': 'OpenAI' },
             { 'name': 'GPT-4o', 'org': 'OpenAI' },
@@ -67,9 +78,9 @@ class Database:
                 for m in models:
                     cur.execute('INSERT INTO models (name, org) VALUES (?, ?)', (m['name'], m['org']))
                     model_id = cur.lastrowid
-                    text = round(80 + (20 * os.urandom(1)[0]/255), 1)
-                    translate = round(75 + (25 * os.urandom(1)[0]/255), 1)
-                    vision = round(70 + (30 * os.urandom(1)[0]/255), 1)
+                    text = round(random.uniform(80, 100), 1)
+                    translate = round(random.uniform(75, 100), 1)
+                    vision = round(random.uniform(70, 100), 1)
                     overall = round((text + translate + vision) / 3, 1)
                     cur.execute(
                         'INSERT INTO scores (model_id, text, translate, vision, overall, updated_at) VALUES (?, ?, ?, ?, ?, ?)',
@@ -81,19 +92,16 @@ class Database:
                 raise
 
     def get_leaderboard(self, topic: str):
-        order_map = {
-            'overall': 's.overall DESC, s.text DESC, s.translate DESC, s.vision DESC, m.name ASC',
-            'text': 's.text DESC, s.overall DESC, s.translate DESC, s.vision DESC, m.name ASC',
-            'translate': 's.translate DESC, s.overall DESC, s.text DESC, s.vision DESC, m.name ASC',
-            'vision': 's.vision DESC, s.overall DESC, s.text DESC, s.translate DESC, m.name ASC',
-        }
-        topic_key = topic if topic in order_map else 'overall'
+        # Validate the topic against a strict whitelist and choose a static ORDER BY clause.
+        topic_key = topic if topic in ALLOWED_TOPICS else 'overall'
+        order_clause = ORDER_BY_MAP[topic_key]
         with closing(self._connect()) as conn:
             cur = conn.cursor()
+            # Compose SQL with the chosen constant ORDER BY clause (no user input interpolation).
             sql = (
                 'SELECT m.name as model, m.org, s.text, s.translate, s.vision, s.overall, s.updated_at '
                 'FROM models m JOIN scores s ON m.id = s.model_id '
-                f'ORDER BY {order_map[topic_key]}'
+                'ORDER BY ' + order_clause
             )
             rows = cur.execute(sql).fetchall()
             result = []

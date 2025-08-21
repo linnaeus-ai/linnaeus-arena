@@ -3,6 +3,17 @@ import path from 'path';
 import sqlite3 from 'sqlite3';
 import { open } from 'sqlite';
 
+// Whitelisted ORDER BY clauses. Never construct identifiers from user input.
+// Keep this immutable to avoid accidental mutation.
+const ORDER_BY_MAP = Object.freeze({
+  overall: 's.overall DESC, s.text DESC, s.translate DESC, s.vision DESC, m.name ASC',
+  text: 's.text DESC, s.overall DESC, s.translate DESC, s.vision DESC, m.name ASC',
+  translate: 's.translate DESC, s.overall DESC, s.text DESC, s.vision DESC, m.name ASC',
+  vision: 's.vision DESC, s.overall DESC, s.text DESC, s.translate DESC, m.name ASC'
+});
+
+const ALLOWED_TOPICS = new Set(Object.keys(ORDER_BY_MAP));
+
 export class Database {
   constructor(dbPath) {
     this.dbPath = dbPath;
@@ -83,20 +94,18 @@ export class Database {
   }
 
   async getLeaderboard(topic) {
-    const allowedTopics = new Set(['overall', 'text', 'translate', 'vision']);
-    const key = allowedTopics.has(topic) ? topic : 'overall';
-    const orderBy = {
-      overall: 's.overall DESC, s.text DESC, s.translate DESC, s.vision DESC, m.name ASC',
-      text: 's.text DESC, s.overall DESC, s.translate DESC, s.vision DESC, m.name ASC',
-      translate: 's.translate DESC, s.overall DESC, s.text DESC, s.vision DESC, m.name ASC',
-      vision: 's.vision DESC, s.overall DESC, s.text DESC, s.translate DESC, m.name ASC'
-    }[key];
+    // Validate topic against whitelist and choose a static ORDER BY clause.
+    const key = ALLOWED_TOPICS.has(topic) ? topic : 'overall';
+    const orderByClause = ORDER_BY_MAP[key];
 
-    const rows = await this.conn.all(
-      `SELECT m.name as model, m.org, s.text, s.translate, s.vision, s.overall, s.updated_at
-       FROM models m JOIN scores s ON m.id = s.model_id
-  ORDER BY ${orderBy}`
-    );
+    // Compose SQL by concatenating the chosen constant ORDER BY clause (no identifier/user input interpolation).
+    const sql = [
+      'SELECT m.name as model, m.org, s.text, s.translate, s.vision, s.overall, s.updated_at',
+      'FROM models m JOIN scores s ON m.id = s.model_id',
+      'ORDER BY ' + orderByClause
+    ].join(' ');
+
+    const rows = await this.conn.all(sql);
 
     // Add rank after sorting
     return rows.map((r, idx) => ({ rank: idx + 1, ...r }));
