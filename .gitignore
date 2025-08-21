@@ -1,7 +1,28 @@
-__pycache__/
-poetry.lock
-.vscode
-.env
-*.db
+# Python
+.venv/
 __pycache__/
 *.pyc
+poetry.lock
+
+# Node
+node_modules/
+
+# Editors/IDE
+.vscode
+
+# Environment files
+.env
+
+# SQLite databases and artifacts
+*.db
+*.sqlite3
+leaderboard/data/*.db
+leaderboard/data/*.db-*
+
+# OS junk files
+.DS_Store
+Thumbs.db
+
+# Git metadata folders
+.github/
+.git/
