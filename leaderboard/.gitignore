@@ -1,0 +1,19 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Node
+node_modules/
+
+# SQLite database artifacts
+data/*.db
+data/*.db-*
+*.sqlite3
+
+# Env files
+.env
+
+# OS junk
+.DS_Store
+Thumbs.db

@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Linnaeus Leaderboard</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <header class="rh-header">
+    <div class="container">
+      <div class="brand">
+        <span class="flag"></span>
+        <h1 class="title">Linnaeus Leaderboard</h1>
+      </div>
+      <nav class="tabs" role="tablist" aria-label="Onderwerpen">
+        <button class="tab active" data-topic="overall" role="tab" aria-selected="true">Overall</button>
+        <button class="tab" data-topic="text" role="tab" aria-selected="false">Text</button>
+        <button class="tab" data-topic="translate" role="tab" aria-selected="false">Translate</button>
+        <button class="tab" data-topic="vision" role="tab" aria-selected="false">Vision</button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <section>
+      <div class="table-tools">
+        <input id="search" class="search" type="search" placeholder="Zoek model of organisatie" aria-label="Zoek" />
+      </div>
+      <div class="table-wrap">
+        <table id="leaderboard" class="table" role="table" aria-label="Leaderboard">
+          <thead>
+            <tr>
+              <th data-key="rank" class="sortable">#</th>
+              <th data-key="model" class="sortable left">Model</th>
+              <th data-key="org" class="sortable left">Organisatie</th>
+              <th data-key="text" class="sortable">Text</th>
+              <th data-key="translate" class="sortable">Translate</th>
+              <th data-key="vision" class="sortable">Vision</th>
+              <th data-key="overall" class="sortable">Overall</th>
+              <th class="left">Bijgewerkt</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Rows injected by JS -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <footer class="rh-footer">
+    <div class="container">
+      <small>&copy; 2025 Linnaeus</small>
+    </div>
+  </footer>
+  <script src="/main.js" type="module"></script>
+</body>
+</html>
