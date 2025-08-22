@@ -14,11 +14,18 @@ from typing import Dict, List, Tuple, Optional
 import os
 from dotenv import load_dotenv
 import openai
-# import pandas as pd  # Removed for simplicity
 from collections import defaultdict
 import math
+import logging
 
 load_dotenv()
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 # Database setup
 DB_FILE = "lm_arena_results.db"
@@ -217,25 +224,27 @@ def get_model_response(model_name: str, prompt: str, category: str) -> str:
         deployment_name = None
     
     # Simulate different models with different parameters
+    # NOTE: Non-OpenAI models are simulated using GPT-3.5 with variations for testing
     model_configs = {
-        "GPT-4-Turbo": {"model": "gpt-4-turbo-preview", "temperature": 0.7},
-        "GPT-4": {"model": "gpt-4", "temperature": 0.7},
-        "GPT-3.5-Turbo": {"model": "gpt-3.5-turbo", "temperature": 0.7},
-        "Claude-3-Opus": {"model": "gpt-3.5-turbo", "temperature": 0.8},  # Simulated
-        "Claude-3-Sonnet": {"model": "gpt-3.5-turbo", "temperature": 0.6},  # Simulated
-        "Claude-3-Haiku": {"model": "gpt-3.5-turbo", "temperature": 0.5},  # Simulated
-        "Gemini-Pro": {"model": "gpt-3.5-turbo", "temperature": 0.7},  # Simulated
-        "Gemini-Ultra": {"model": "gpt-3.5-turbo", "temperature": 0.9},  # Simulated
-        "Llama-3-70B": {"model": "gpt-3.5-turbo", "temperature": 0.75},  # Simulated
-        "Llama-3-8B": {"model": "gpt-3.5-turbo", "temperature": 0.65},  # Simulated
-        "Mixtral-8x7B": {"model": "gpt-3.5-turbo", "temperature": 0.7},  # Simulated
-        "Mistral-7B": {"model": "gpt-3.5-turbo", "temperature": 0.6},  # Simulated
-        "Qwen-72B": {"model": "gpt-3.5-turbo", "temperature": 0.8},  # Simulated
-        "Yi-34B": {"model": "gpt-3.5-turbo", "temperature": 0.7},  # Simulated
-        "Deepseek-Coder": {"model": "gpt-3.5-turbo", "temperature": 0.3},  # Simulated
+        "GPT-4-Turbo": {"model": "gpt-4-turbo-preview", "temperature": 0.7, "max_tokens": 1000},
+        "GPT-4": {"model": "gpt-4", "temperature": 0.7, "max_tokens": 1000},
+        "GPT-3.5-Turbo": {"model": "gpt-3.5-turbo", "temperature": 0.7, "max_tokens": 1000},
+        # Simulated models with varying parameters for differentiation
+        "Claude-3-Opus": {"model": "gpt-3.5-turbo", "temperature": 0.8, "max_tokens": 1200, "system_suffix": " Be analytical and thorough."},
+        "Claude-3-Sonnet": {"model": "gpt-3.5-turbo", "temperature": 0.6, "max_tokens": 800, "system_suffix": " Be concise and clear."},
+        "Claude-3-Haiku": {"model": "gpt-3.5-turbo", "temperature": 0.5, "max_tokens": 500, "system_suffix": " Be brief and poetic."},
+        "Gemini-Pro": {"model": "gpt-3.5-turbo", "temperature": 0.7, "max_tokens": 900, "system_suffix": " Be comprehensive."},
+        "Gemini-Ultra": {"model": "gpt-3.5-turbo", "temperature": 0.9, "max_tokens": 1500, "system_suffix": " Be creative and expansive."},
+        "Llama-3-70B": {"model": "gpt-3.5-turbo", "temperature": 0.75, "max_tokens": 1100, "system_suffix": " Be detailed and structured."},
+        "Llama-3-8B": {"model": "gpt-3.5-turbo", "temperature": 0.65, "max_tokens": 600, "system_suffix": " Be direct and efficient."},
+        "Mixtral-8x7B": {"model": "gpt-3.5-turbo", "temperature": 0.7, "max_tokens": 950, "system_suffix": " Balance detail with clarity."},
+        "Mistral-7B": {"model": "gpt-3.5-turbo", "temperature": 0.6, "max_tokens": 700, "system_suffix": " Be precise."},
+        "Qwen-72B": {"model": "gpt-3.5-turbo", "temperature": 0.8, "max_tokens": 1000, "system_suffix": " Be informative."},
+        "Yi-34B": {"model": "gpt-3.5-turbo", "temperature": 0.7, "max_tokens": 850, "system_suffix": " Be balanced."},
+        "Deepseek-Coder": {"model": "gpt-3.5-turbo", "temperature": 0.3, "max_tokens": 800, "system_suffix": " Focus on code quality and efficiency."},
     }
     
-    config = model_configs.get(model_name, {"model": "gpt-3.5-turbo", "temperature": 0.7})
+    config = model_configs.get(model_name, {"model": "gpt-3.5-turbo", "temperature": 0.7, "max_tokens": 1000})
     
     # Add category-specific system prompts
     category_prompts = {
@@ -250,6 +259,9 @@ def get_model_response(model_name: str, prompt: str, category: str) -> str:
     }
     
     system_prompt = category_prompts.get(category, "Je bent een behulpzame assistent.")
+    # Add model-specific suffix if available
+    if "system_suffix" in config:
+        system_prompt += config["system_suffix"]
     
     try:
         if azure_key and deployment_name:
@@ -261,7 +273,7 @@ def get_model_response(model_name: str, prompt: str, category: str) -> str:
                     {"role": "user", "content": prompt}
                 ],
                 temperature=config["temperature"],
-                max_tokens=1000
+                max_tokens=config.get("max_tokens", 1000)
             )
         else:
             # Use regular OpenAI
@@ -272,12 +284,16 @@ def get_model_response(model_name: str, prompt: str, category: str) -> str:
                     {"role": "user", "content": prompt}
                 ],
                 temperature=config["temperature"],
-                max_tokens=1000
+                max_tokens=config.get("max_tokens", 1000)
             )
         return response.choices[0].message.content
+    except openai.APIError as e:
+        logger.error(f"OpenAI API error for model '{model_name}': {e}")
+        # Fallback without exposing prompt content
+        return f"[Gesimuleerd {model_name} Antwoord]\n\nDit is een tijdelijk antwoord voor het testen van de arena interface. In productie zou dit een echt antwoord van {model_name} zijn.\n\nCategorie: {category}"
     except Exception as e:
-        # Fallback to a dummy response for testing
-        return f"[Gesimuleerd {model_name} Antwoord]\n\nDit is een tijdelijk antwoord voor het testen van de arena interface. In productie zou dit een echt antwoord van {model_name} zijn.\n\nOntvangen prompt: {prompt[:100]}...\n\nCategorie: {category}"
+        logger.exception(f"Unexpected error for model '{model_name}': {e}")
+        return f"[Gesimuleerd {model_name} Antwoord]\n\nDit is een tijdelijk antwoord voor het testen van de arena interface. In productie zou dit een echt antwoord van {model_name} zijn.\n\nCategorie: {category}"
 
 def get_leaderboard(category: str = "Algemeen") -> List[List]:
     """Get leaderboard data as list of lists for Gradio DataFrame"""
@@ -336,7 +352,8 @@ def get_leaderboard(category: str = "Algemeen") -> List[List]:
     conn.close()
     
     if not data:
-        return [["No data available for this category"]]
+        # Return proper table structure with headers and empty row
+        return [headers, [""] * len(headers)]
     
     return [headers] + data
 
@@ -666,11 +683,20 @@ if __name__ == "__main__":
     # Initialize database
     init_database()
     
+    # Get server configuration from environment variables
+    server_name = os.environ.get("SERVER_NAME", "127.0.0.1")
+    server_port = int(os.environ.get("SERVER_PORT", 7871))
+    share = os.environ.get("GRADIO_SHARE", "False").lower() in ("1", "true", "yes")
+    debug = os.environ.get("GRADIO_DEBUG", "True").lower() in ("1", "true", "yes")
+    
+    logger.info(f"Starting LM Arena on {server_name}:{server_port}")
+    logger.info(f"Share: {share}, Debug: {debug}")
+    
     # Create and launch interface
     demo = create_arena_interface()
     demo.launch(
-        server_name="127.0.0.1",
-        server_port=7871,
-        share=False,
-        debug=True
+        server_name=server_name,
+        server_port=server_port,
+        share=share,
+        debug=debug
     )
