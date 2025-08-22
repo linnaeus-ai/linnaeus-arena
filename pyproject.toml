@@ -1,19 +1,17 @@
-[project]
+[tool.poetry]
 name = "linnaeus-test"
 version = "0.1.0"
 description = ""
-authors = [
-    {name = "Jornand de Buisonjé",email = "Jornand.deBuisonje@uwv.nl"}
-]
+authors = ["Jornand de Buisonjé <Jornand.deBuisonje@uwv.nl>"]
 readme = "README.md"
-requires-python = ">=3.12"
-dependencies = [
-    "gradio (>=5.34.0,<6.0.0)",
-    "pandas (>=2.3.0,<3.0.0)",
-]
-
-[tool.poetry]
 packages = [{include = "linnaeus_test", from = "src"}]
+
+[tool.poetry.dependencies]
+python = "^3.12"
+gradio = "^5.34.0"
+pandas = "^2.3.0"
+python-dotenv = "^1.0.0"
+openai = "^1.0.0"
 
 
 [build-system]
